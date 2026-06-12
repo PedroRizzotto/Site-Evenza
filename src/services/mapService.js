@@ -1,8 +1,6 @@
 import axios from 'axios';
 
-const BASE_URL = 'https://ripe-donella-atitus-fbbf314a.koyeb.app/ws/point';
-
-
+const BASE_URL = 'https://two025-01-apisample.onrender.com/ws/point';
 
 export async function getPoints(token) {
   try {
