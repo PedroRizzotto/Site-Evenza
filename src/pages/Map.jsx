@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { Navbar } from "../components/Navbar";
 import { GoogleMap, Marker, InfoWindow, useJsApiLoader } from "@react-google-maps/api";
@@ -47,6 +47,7 @@ export const Map = () => {
   const [search, setSearch] = useState("");
   const [searchFocused, setSearchFocused] = useState(false);
   const [extras, setExtras] = useState({});
+  const markerClickedRef = useRef(false);
 
   const { isLoaded } = useJsApiLoader({
     googleMapsApiKey: import.meta.env.VITE_GOOGLE_MAPS_API_KEY,
@@ -68,9 +69,9 @@ export const Map = () => {
       try {
         const data = await getPoints(token);
         const stored = JSON.parse(localStorage.getItem("evenza_eventos") || "{}");
-        // Mostra apenas os pontos que foram cadastrados pelo app (têm entrada no localStorage)
+        const normalize = (s) => s?.trim().toLowerCase();
         const filtered = data.filter((m) =>
-          Object.values(stored).some((ex) => ex.titulo === m.title)
+          Object.values(stored).some((ex) => normalize(ex.titulo) === normalize(m.title))
         );
         setMarkers(filtered);
       } catch (e) {
@@ -91,16 +92,27 @@ export const Map = () => {
   } : null;
 
   const handleMapClick = () => {
+    if (markerClickedRef.current) {
+      markerClickedRef.current = false;
+      return;
+    }
     setSelectedMarker(null);
   };
 
-  // Filtra markers pelo texto de busca
-  const filteredMarkers = markers.filter((m) =>
-    m.title.toLowerCase().includes(search.toLowerCase())
-  );
+  // Eventos do localStorage como fallback para busca
+  const localEventos = Object.values(extras);
 
-  // Últimos 10 eventos cadastrados (para mostrar ao focar no search)
-  const last10 = markers.slice(-10).reverse();
+  // Filtra markers pelo texto de busca; se não há markers ainda, busca no localStorage
+  const filteredMarkers = markers.length > 0
+    ? markers.filter((m) => m.title.toLowerCase().includes(search.toLowerCase()))
+    : localEventos
+        .filter((ex) => ex.titulo?.toLowerCase().includes(search.toLowerCase()))
+        .map((ex, i) => ({ id: `local-${i}`, title: ex.titulo, position: null }));
+
+  // Últimos 10: prefere markers da API, cai para localStorage
+  const last10 = markers.length > 0
+    ? markers.slice(-10).reverse()
+    : localEventos.slice(-10).reverse().map((ex, i) => ({ id: `local-${i}`, title: ex.titulo, position: null }));
 
   // Carrossel: todos os markers com imagem salva, ou todos se não filtrado
   const carouselItems = markers.filter((m) => {
@@ -124,7 +136,7 @@ export const Map = () => {
         <div className="flex justify-end">
           <button
             onClick={logout}
-            className="w-[40px] h-[40px] rounded-full bg-[#ffe14e] border-2 border-[#192853] shadow-md flex items-center justify-center hover:brightness-105 transition-colors"
+            className="w-[40px] h-[40px] rounded-full bg-white border-2 border-[#ffe14e] shadow-md flex items-center justify-center hover:brightness-105 transition-colors"
           >
             <LogoutIcon />
           </button>
@@ -192,7 +204,7 @@ export const Map = () => {
                 return (
                   <div
                     key={m.id}
-                    onClick={() => { setSelectedMarker(m); setMapCenter(m.position); setSearch(""); setSearchFocused(false); }}
+                    onClick={() => { if (m.position) { setSelectedMarker(m); setMapCenter(m.position); } setSearch(""); setSearchFocused(false); }}
                     className="flex items-center gap-3 px-4 py-3 border-b border-gray-100 cursor-pointer hover:bg-gray-50 active:bg-gray-100"
                   >
                     {ex?.imagem ? (
@@ -233,7 +245,7 @@ export const Map = () => {
                 position={marker.position}
                 title={marker.title}
                 icon={customMarkerIcon}
-                onClick={() => setSelectedMarker(marker)}
+                onClick={() => { markerClickedRef.current = true; setSelectedMarker(marker); }}
               />
             ))}
 
@@ -241,7 +253,7 @@ export const Map = () => {
               <InfoWindow
                 position={selectedMarker.position}
                 onCloseClick={() => setSelectedMarker(null)}
-                options={{ pixelOffset: new window.google.maps.Size(0, -36), disableAutoPan: false }}
+                options={{ pixelOffset: new window.google.maps.Size(0, -36), disableAutoPan: false, disableCloseButton: true }}
               >
                 <div style={{ maxWidth: 190, padding: "4px 2px" }}>
                   <p style={{ fontWeight: "700", color: "#192853", fontSize: 13, margin: "0 0 4px" }}>{selectedMarker.title}</p>
@@ -253,6 +265,12 @@ export const Map = () => {
                   )}
                   {getExtra(selectedMarker)?.localizacao && (
                     <p style={{ color: "#888", fontSize: 11, margin: "2px 0 0" }}>📍 {getExtra(selectedMarker).localizacao}</p>
+                  )}
+                  {getExtra(selectedMarker)?.inscricao === "Pago" && getExtra(selectedMarker)?.valor && (
+                    <p style={{ color: "#192853", fontSize: 11, fontWeight: "600", margin: "4px 0 0" }}>💰 R$ {parseFloat(getExtra(selectedMarker).valor).toFixed(2)}</p>
+                  )}
+                  {getExtra(selectedMarker)?.inscricao && getExtra(selectedMarker).inscricao !== "Pago" && (
+                    <p style={{ color: "#888", fontSize: 11, margin: "2px 0 0" }}>🎟 {getExtra(selectedMarker).inscricao}</p>
                   )}
                 </div>
               </InfoWindow>

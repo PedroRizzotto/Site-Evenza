@@ -80,13 +80,6 @@ export function Login() {
           icon={<LockIcon />}
         />
 
-        {/* Esqueci minha senha */}
-        <div className="flex justify-end -mt-2">
-          <button type="button" className="text-[#ffe14e] text-[15px] font-normal cursor-pointer bg-transparent border-none">
-            Esqueci minha senha
-          </button>
-        </div>
-
         {/* Erro */}
         {erro && (
           <p className="text-red-400 text-sm text-center">{erro}</p>
@@ -101,23 +94,18 @@ export function Login() {
       </form>
 
       {/* Divider */}
-      <div className="w-full flex items-center gap-3 my-6">
-        <div className="flex-1 h-px bg-white/20" />
-        <div className="flex-1 h-px bg-white/20" />
-      </div>
+      <div className="w-full h-px bg-white/20 my-6" />
 
-      {/* Botão Cadastro */}
-      <div className="w-full">
-        <Link to="/register" className="w-full">
-          <button
-            type="button"
-            className="w-full h-[44px] rounded-[100px] bg-white border border-[#747775] flex items-center justify-center gap-2 text-[#1f1f1f] font-medium text-[15px] cursor-pointer hover:bg-gray-50 transition-colors"
-          >
-            <ArrowRightIcon />
-            Faça o seu cadastro!
-          </button>
-        </Link>
-      </div>
+      {/* Botão Cadastro — secundário, menor */}
+      <Link to="/register" className="w-full flex justify-center">
+        <button
+          type="button"
+          className="flex items-center gap-2 px-6 h-[38px] rounded-full bg-white border border-white text-[#192853] text-[13px] font-medium cursor-pointer hover:bg-gray-50 transition-colors"
+        >
+          <ArrowRightIcon />
+          Faça o seu cadastro!
+        </button>
+      </Link>
     </div>
   );
 }
